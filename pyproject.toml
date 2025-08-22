@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "google-dork-automation"
+version = "0.1.0"
+description = "A modular, extensible, and production-grade Python package to legally automate Google-dork queries."
+authors = [{ name = "Jules", email = "jules@example.com" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+]
+dependencies = [
+    "typer[all]",
+    "playwright",
+    "pydantic",
+    "pyyaml",
+    "structlog",
+    "keyring",
+    "weasyprint",
+    "Jinja2",
+    "pluggy",
+    "httpx",
+    "beautifulsoup4",
+    "lxml",
+    "aiosqlite",
+    "pandas", # For CSV/JSON export
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "respx",
+    "mypy",
+    "pre-commit",
+    "mkdocs",
+    "mkdocs-material",
+]
+
+[project.urls]
+Homepage = "https://github.com/user/google-dork-automation"
+"Bug Tracker" = "https://github.com/user/google-dork-automation/issues"
+
+[project.scripts]
+gda = "google_dork_automation.cli:app"
+
+[tool.setuptools]
+packages = ["google_dork_automation"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "playwright.*",
+    "pluggy.*",
+    "weasyprint.*",
+    "keyring.*",
+    "pandas.*",
+    "bs4.*", # beautifulsoup4
+]
+ignore_missing_imports = true

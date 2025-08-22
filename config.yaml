@@ -1,0 +1,23 @@
+browser:
+  headless: false
+  user_data_dir: null   # null = ephemeral
+  viewport: { width: 1366, height: 768 }
+
+search:
+  google:
+    tbs: "qdr:y"        # last year
+  cse:
+    api_key: ${CSE_API_KEY}
+    cx: "009679435902400177945:whgvsi86pmo"
+    safe: "off"
+
+stealth:
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36"
+  min_delay: 1
+  max_delay: 5
+  proxy_file: proxies.txt
+
+storage:
+  db_path: "output/gda.db"
+  html_template: "templates/report.html"
