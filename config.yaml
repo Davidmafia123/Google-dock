@@ -1,5 +1,5 @@
 browser:
-  headless: false
+  headless: true
   user_data_dir: null   # null = ephemeral
   viewport: { width: 1366, height: 768 }
 
