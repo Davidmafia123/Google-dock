@@ -1,0 +1,34 @@
+# Google Dorking Automation - Dork Templates
+# This file contains categorized lists of Google Dorks.
+
+# Category: Log Files
+# Dorks for finding exposed log files.
+log_files:
+  description: "Dorks for finding exposed log files that may contain sensitive information."
+  dorks:
+    - 'allintext:password filetype:log'
+    - 'filetype:log inurl:password'
+    - 'intitle:"index of" "ws_ftp.log"'
+    - 'inurl:"/private/var/log"'
+
+# Category: SQL Injection Errors
+# Dorks for finding web pages that are vulnerable to SQL injection.
+sqli_errors:
+  description: "Dorks for finding common SQL database error messages on web pages."
+  dorks:
+    - 'intext:"sql syntax near"'
+    - 'intext:"syntax error has occurred"'
+    - 'intext:"incorrect syntax near"'
+    - 'intext:"unexpected end of SQL command"'
+    - 'inurl:".php?id="'
+
+# Category: Exposed Admin Panels
+# Dorks for finding login pages for administrative panels.
+exposed_panels:
+  description: "Dorks for finding exposed administrative login panels."
+  dorks:
+    - 'intitle:"admin login"'
+    - 'intitle:"cpanel login"'
+    - 'inurl:/admin/login.php'
+    - 'intitle:"phpmyadmin" "server"'
+    - 'intitle:"dashboard" inurl:"admin"'
