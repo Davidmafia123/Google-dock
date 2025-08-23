@@ -10,6 +10,10 @@ from google_dork_automation.core.config import load_config, Config
 from google_dork_automation.browser.playwright_factory import PlaywrightManager
 from google_dork_automation.search.cse import CseSearchEngine
 from google_dork_automation.core.templates import load_templates
+from google_dork_automation.storage.exporters import CsvExporter, JsonLinesExporter
+from google_dork_automation.storage.sqlite import SqliteStorage
+from google_dork_automation.core.models import SearchResult
+from typing import List
 
 app = typer.Typer(help="Google Dorking Automation Tool")
 templates_app = typer.Typer(help="Manage dork templates.")
@@ -36,7 +40,7 @@ def list_templates():
     rich.print(table)
 
 
-async def run_browser_search(query: str, config: Config, attach: bool):
+async def run_browser_search(query: str, config: Config, attach: bool) -> List[SearchResult]:
     """Runs the search using the browser-based Google engine."""
     rich.print("[blue]Using browser-based Google Search...[/blue]")
     manager = PlaywrightManager(config)
@@ -54,8 +58,9 @@ async def run_browser_search(query: str, config: Config, attach: bool):
     finally:
         await manager.close()
         rich.print("[green]Browser closed.[/green]")
+    return [] # Return empty list for now
 
-async def run_cse_search(query: str, config: Config):
+async def run_cse_search(query: str, config: Config) -> List[SearchResult]:
     """Runs the search using the Google CSE API."""
     rich.print("[blue]Using Google Custom Search Engine (CSE)...[/blue]")
     engine = CseSearchEngine(config)
@@ -63,27 +68,70 @@ async def run_cse_search(query: str, config: Config):
         results = await engine.search(query)
         if not results:
             rich.print("[yellow]No results found.[/yellow]")
-            return
-
-        rich.print(f"[green]Found {len(results)} results:[/green]")
-        for result in results:
-            rich.print(f"  - [bold cyan]{result.title}[/bold cyan]")
-            rich.print(f"    [dim]{result.url}[/dim]")
+        else:
+            rich.print(f"[green]Found {len(results)} results.[/green]")
+        return results
     finally:
         await engine.close()
 
 
+async def main_async_logic(
+    dorks_to_run: List[str],
+    config: Config,
+    google: bool,
+    cse: bool,
+    attach: bool,
+    output_csv: Path,
+    output_jsonl: Path,
+    output_sqlite: Path,
+):
+    """The core async logic for running searches and saving results."""
+    all_results = []
+
+    for dork_query in dorks_to_run:
+        rich.print(f"Executing query: [bold]'{dork_query}'[/bold]")
+        results = []
+        if google:
+            results = await run_browser_search(dork_query, config, attach)
+        elif cse:
+            results = await run_cse_search(dork_query, config)
+
+        all_results.extend(results)
+        # Optional: Add a delay here from stealth config
+
+    if not all_results:
+        rich.print("[bold yellow]Finished running all dorks. No results to save.[/bold yellow]")
+        return
+
+    # --- Save Results ---
+    rich.print(f"\n[bold]Total results to save: {len(all_results)}[/bold]")
+    if output_csv:
+        CsvExporter().write(all_results, output_csv)
+    if output_jsonl:
+        JsonLinesExporter().write(all_results, output_jsonl)
+    if output_sqlite:
+        storage = SqliteStorage(output_sqlite)
+        await storage.init_db()
+        await storage.save_results(all_results)
+        await storage.close()
+
+
 @app.command(name="search", help="Execute a search using a specified backend.")
 def search_command(
+    # Input options
     query: Annotated[
         str, typer.Option(help="A single Google Dork query to execute.")
     ] = None,
     template: Annotated[
         str, typer.Option(help="The name of the dork template to use.")
     ] = None,
+
+    # Config options
     config_file: Annotated[
         Path, typer.Option("--config", help="Path to the configuration file.")
     ] = Path("config.yaml"),
+
+    # Backend options
     google: Annotated[
         bool,
         typer.Option("--google", help="Use the browser-based Google search."),
@@ -92,6 +140,8 @@ def search_command(
         bool,
         typer.Option("--cse", help="Use the Google Custom Search Engine API."),
     ] = False,
+
+    # Browser options
     attach: Annotated[
         bool,
         typer.Option(
@@ -99,6 +149,17 @@ def search_command(
             help="Attach to a running Chrome instance (only with --google).",
         ),
     ] = False,
+
+    # Output options
+    output_csv: Annotated[
+        Path, typer.Option(help="Path to save results in CSV format.")
+    ] = None,
+    output_jsonl: Annotated[
+        Path, typer.Option(help="Path to save results in JSON-Lines format.")
+    ] = None,
+    output_sqlite: Annotated[
+        Path, typer.Option(help="Path to save results in a SQLite database.")
+    ] = None,
 ):
     """
     Google Dorking Automation Tool
@@ -141,13 +202,16 @@ def search_command(
         config = load_config(config_file)
         rich.print(f"Configuration loaded from '{config_file}'.")
 
-        for dork_query in dorks_to_run:
-            rich.print(f"Executing query: [bold]'{dork_query}'[/bold]")
-            if google:
-                asyncio.run(run_browser_search(dork_query, config, attach))
-            elif cse:
-                asyncio.run(run_cse_search(dork_query, config))
-            # Optional: Add a delay here from stealth config
+        asyncio.run(main_async_logic(
+            dorks_to_run=dorks_to_run,
+            config=config,
+            google=google,
+            cse=cse,
+            attach=attach,
+            output_csv=output_csv,
+            output_jsonl=output_jsonl,
+            output_sqlite=output_sqlite,
+        ))
 
     except FileNotFoundError:
         rich.print(f"[bold red]Error: Configuration file not found at '{config_file}'[/bold red]")
