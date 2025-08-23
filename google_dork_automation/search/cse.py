@@ -16,12 +16,14 @@ class CseSearchEngine(AbstractSearchEngine):
         self.config = config.search.cse
         self.client = httpx.AsyncClient()
 
-    async def search(self, query: str) -> List[SearchResult]:
+    async def search(self, query: str, page=None) -> List[SearchResult]:
         """
-        Performs a search using the Google CSE API.
+        Performs a search using the Google CSE API. The 'page' argument
+        is ignored as this engine does not use a browser.
 
         Args:
             query: The search query string.
+            page: Unused.
 
         Returns:
             A list of SearchResult objects, or an empty list if the search fails.

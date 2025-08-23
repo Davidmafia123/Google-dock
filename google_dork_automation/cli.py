@@ -9,6 +9,7 @@ from rich.table import Table
 from google_dork_automation.core.config import load_config, Config
 from google_dork_automation.browser.playwright_factory import PlaywrightManager
 from google_dork_automation.search.cse import CseSearchEngine
+from google_dork_automation.search.google import GoogleSearchEngine
 from google_dork_automation.core.templates import load_templates
 from google_dork_automation.storage.exporters import CsvExporter, JsonLinesExporter
 from google_dork_automation.storage.sqlite import SqliteStorage
@@ -44,28 +45,34 @@ async def run_browser_search(query: str, config: Config, attach: bool) -> List[S
     """Runs the search using the browser-based Google engine."""
     rich.print("[blue]Using browser-based Google Search...[/blue]")
     manager = PlaywrightManager(config)
+    all_results = []
     try:
-        context = await manager.get_browser_context(attach=attach)
+        context = await manager.start_get_context(attach=attach)
         page = await context.new_page()
-        rich.print("[green]Browser launched successfully.[/green]")
+        rich.print("[green]Browser context created.[/green]")
 
-        await page.goto("https://www.google.com")
-        rich.print(f"Page title: [bold]{await page.title()}[/bold]")
-        # Placeholder for actual search logic
-        await asyncio.sleep(2)
+        engine = GoogleSearchEngine(config)
+        results = await engine.search(query=query, page=page)
 
+        if not results:
+            rich.print("[yellow]No results found.[/yellow]")
+        else:
+            rich.print(f"[green]Found {len(results)} results.[/green]")
+
+        all_results.extend(results)
         await page.close()
     finally:
         await manager.close()
-        rich.print("[green]Browser closed.[/green]")
-    return [] # Return empty list for now
+        rich.print("[green]Browser resources released.[/green]")
+    return all_results
 
 async def run_cse_search(query: str, config: Config) -> List[SearchResult]:
     """Runs the search using the Google CSE API."""
     rich.print("[blue]Using Google Custom Search Engine (CSE)...[/blue]")
     engine = CseSearchEngine(config)
     try:
-        results = await engine.search(query)
+        # Pass page=None as it's not used by this engine
+        results = await engine.search(query=query, page=None)
         if not results:
             rich.print("[yellow]No results found.[/yellow]")
         else:

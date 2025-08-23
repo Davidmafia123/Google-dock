@@ -42,14 +42,15 @@ async def test_playwright_manager_launch_mode(mocker, mock_config):
         "google_dork_automation.browser.playwright_factory.async_playwright",
         return_value=mock_pw_manager,
     )
-    mock_pw_manager.start.return_value = mock_playwright_instance
+    # Mock the context manager's __aenter__ to return the playwright instance
+    mock_pw_manager.__aenter__.return_value = mock_playwright_instance
     mock_playwright_instance.chromium.launch.return_value = mock_browser
     mock_browser.new_context.return_value = mock_context
 
     manager = PlaywrightManager(mock_config)
-    context = await manager.get_browser_context(attach=False)
+    context = await manager.start_get_context(attach=False)
 
-    mock_pw_manager.start.assert_called_once()
+    mock_pw_manager.__aenter__.assert_awaited_once()
     mock_playwright_instance.chromium.launch.assert_called_once()
     mock_browser.new_context.assert_called_once()
     assert context == mock_context
@@ -57,7 +58,7 @@ async def test_playwright_manager_launch_mode(mocker, mock_config):
 
     await manager.close()
     mock_browser.close.assert_called_once()
-    mock_pw_manager.stop.assert_called_once()
+    mock_pw_manager.__aexit__.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -73,13 +74,13 @@ async def test_playwright_manager_attach_mode(mocker, mock_config):
         "google_dork_automation.browser.playwright_factory.async_playwright",
         return_value=mock_pw_manager,
     )
-    mock_pw_manager.start.return_value = mock_playwright_instance
+    mock_pw_manager.__aenter__.return_value = mock_playwright_instance
     mock_playwright_instance.chromium.connect_over_cdp.return_value = mock_browser
 
     manager = PlaywrightManager(mock_config)
-    context = await manager.get_browser_context(attach=True)
+    context = await manager.start_get_context(attach=True)
 
-    mock_pw_manager.start.assert_called_once()
+    mock_pw_manager.__aenter__.assert_awaited_once()
     mock_playwright_instance.chromium.connect_over_cdp.assert_called_once_with("http://127.0.0.1:9222")
     assert context == mock_context
     assert manager._did_launch_browser is False
@@ -87,4 +88,4 @@ async def test_playwright_manager_attach_mode(mocker, mock_config):
     mock_browser.close = AsyncMock()
     await manager.close()
     mock_browser.close.assert_not_called()
-    mock_pw_manager.stop.assert_called_once()
+    mock_pw_manager.__aexit__.assert_awaited_once()

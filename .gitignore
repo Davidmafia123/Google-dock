@@ -71,3 +71,6 @@ config.local.yaml
 *.sqlite3-journal
 output/
 proxies.txt
+
+# Screenshots
+*.png
