@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 from google_dork_automation.core.models import SearchResult
-from google_dork_automation.storage.exporters import CsvExporter, JsonLinesExporter
+from google_dork_automation.storage.exporters import CsvExporter, JsonLinesExporter, ExcelExporter
 
 @pytest.fixture
 def sample_results():
@@ -83,11 +83,31 @@ def test_exporter_no_results(tmp_path: Path):
     """Tests that no file is created when there are no results."""
     csv_exporter = CsvExporter()
     jsonl_exporter = JsonLinesExporter()
+    excel_exporter = ExcelExporter()
     csv_filepath = tmp_path / "no_results.csv"
     jsonl_filepath = tmp_path / "no_results.jsonl"
+    excel_filepath = tmp_path / "no_results.xlsx"
 
     csv_exporter.write([], csv_filepath)
     jsonl_exporter.write([], jsonl_filepath)
+    excel_exporter.write([], excel_filepath)
 
     assert not csv_filepath.exists()
     assert not jsonl_filepath.exists()
+    assert not excel_filepath.exists()
+
+def test_excel_exporter(sample_results, tmp_path: Path):
+    """Tests writing results to an Excel file."""
+    import pandas as pd
+    exporter = ExcelExporter()
+    filepath = tmp_path / "results.xlsx"
+
+    exporter.write(sample_results, filepath)
+
+    assert filepath.exists()
+
+    df = pd.read_excel(filepath)
+    assert len(df) == 2
+    assert list(df.columns) == ["timestamp", "title", "url", "snippet"]
+    assert df.iloc[0]["title"] == "Result 1"
+    assert df.iloc[1]["url"] == "https://example.com/2"

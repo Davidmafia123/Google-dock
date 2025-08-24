@@ -11,7 +11,7 @@ from google_dork_automation.browser.playwright_factory import PlaywrightManager
 from google_dork_automation.search.cse import CseSearchEngine
 from google_dork_automation.search.google import GoogleSearchEngine
 from google_dork_automation.core.templates import load_templates
-from google_dork_automation.storage.exporters import CsvExporter, JsonLinesExporter
+from google_dork_automation.storage.exporters import CsvExporter, JsonLinesExporter, ExcelExporter
 from google_dork_automation.storage.sqlite import SqliteStorage
 from google_dork_automation.core.models import SearchResult
 from typing import List
@@ -91,6 +91,7 @@ async def main_async_logic(
     output_csv: Path,
     output_jsonl: Path,
     output_sqlite: Path,
+    output_excel: Path,
 ):
     """The core async logic for running searches and saving results."""
     all_results = []
@@ -116,6 +117,8 @@ async def main_async_logic(
         CsvExporter().write(all_results, output_csv)
     if output_jsonl:
         JsonLinesExporter().write(all_results, output_jsonl)
+    if output_excel:
+        ExcelExporter().write(all_results, output_excel)
     if output_sqlite:
         storage = SqliteStorage(output_sqlite)
         await storage.init_db()
@@ -166,6 +169,9 @@ def search_command(
     ] = None,
     output_sqlite: Annotated[
         Path, typer.Option(help="Path to save results in a SQLite database.")
+    ] = None,
+    output_excel: Annotated[
+        Path, typer.Option(help="Path to save results in an Excel (.xlsx) file.")
     ] = None,
 ):
     """
@@ -218,6 +224,7 @@ def search_command(
             output_csv=output_csv,
             output_jsonl=output_jsonl,
             output_sqlite=output_sqlite,
+            output_excel=output_excel,
         ))
 
     except FileNotFoundError:

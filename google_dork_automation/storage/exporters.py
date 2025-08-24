@@ -59,3 +59,29 @@ class JsonLinesExporter(AbstractExporter):
             for result in results:
                 f.write(result.model_dump_json() + "\n")
         print(f"Successfully exported {len(results)} results to {filepath}")
+
+class ExcelExporter(AbstractExporter):
+    """Exports search results to an Excel (.xlsx) file."""
+
+    def write(self, results: List[SearchResult], filepath: Path):
+        """Writes results to an Excel file."""
+        if not results:
+            return
+
+        import pandas as pd
+
+        # Ensure the directory exists
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        # Convert list of Pydantic models to a list of dicts
+        data = [result.model_dump(mode='json') for result in results]
+
+        # Create a pandas DataFrame
+        df = pd.DataFrame(data)
+
+        # Reorder columns to be consistent with CSV
+        df = df[["timestamp", "title", "url", "snippet"]]
+
+        # Write to Excel
+        df.to_excel(filepath, index=False, engine='openpyxl')
+        print(f"Successfully exported {len(results)} results to {filepath}")
