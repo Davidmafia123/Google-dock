@@ -35,6 +35,7 @@ dependencies = [
     "aiosqlite",
     "pandas", # For CSV/JSON export
     "openpyxl", # For Excel export
+    "customtkinter", # For GUI
 ]
 
 [project.optional-dependencies]
@@ -47,6 +48,7 @@ dev = [
     "pre-commit",
     "mkdocs",
     "mkdocs-material",
+    "pyinstaller", # For packaging
 ]
 
 [project.urls]
